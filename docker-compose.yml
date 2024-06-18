@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  bot:
+    build: ../../Desktop/MPSIEM-master
+    volumes:
+      - ./src:/app
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - DB_HOST=db
+    depends_on:
+      - redis
+      - db
+    networks:
+      - siem_network
+    command: >
+      sh -c "alembic upgrade head && python main.py"
+
+  redis:
+    image: redis:alpine
+    networks:
+      - siem_network
+
+  db:
+    image: postgres:16-alpine3.18
+    environment:
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASS}"
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - siem_network
+
+networks:
+  siem_network:
+    external: true
+
+volumes:
+  db_data:
+    name: db_volume
